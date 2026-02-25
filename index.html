@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Conference Assistant</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --header-bg: #0f172a;
+    --page-bg: #fafaf9;
+    --user-bubble: #0d9488;
+    --bot-bubble: #f5f5f4;
+    --accent: #0d9488;
+    --body-text: #334155;
+    --muted-text: #94a3b8;
+    --chip-border: #99f6e4;
+    --chip-text: #0f766e;
+    --chip-bg: #f0fdfa;
+    --input-border: #e2e8f0;
+    --shadow: 0 8px 32px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: #f1f0ee;
+    font-family: var(--font-body);
+    color: var(--body-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(13, 148, 136, 0.04), transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(15, 23, 42, 0.03), transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 440px;
+  }
+
+  /* Message entry animation */
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg-animate {
+    animation: msgIn 0.2s ease-out both;
+  }
+
+  /* Typing dots */
+  @keyframes dotPulse {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+  .typing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted-text);
+    display: inline-block;
+    margin: 0 2px;
+  }
+  .typing-dot:nth-child(1) { animation: dotPulse 1.2s infinite 0s; }
+  .typing-dot:nth-child(2) { animation: dotPulse 1.2s infinite 0.2s; }
+  .typing-dot:nth-child(3) { animation: dotPulse 1.2s infinite 0.4s; }
+
+  /* Scrollbar */
+  .messages-scroll::-webkit-scrollbar { width: 5px; }
+  .messages-scroll::-webkit-scrollbar-track { background: transparent; }
+  .messages-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+  /* Chip hover */
+  .chip {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.18);
+    background: #e6faf7;
+  }
+  .chip:active {
+    transform: translateY(0);
+  }
+
+  /* Send button */
+  .send-btn {
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  .send-btn:hover:not(:disabled) {
+    filter: brightness(1.12);
+  }
+  .send-btn:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+  .send-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* Links in bot messages */
+  .bot-msg a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .bot-msg a:hover {
+    color: var(--chip-text);
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// ──────────────────────────────────────────────
+// CONFIG - Edit these values for your deployment
+// ──────────────────────────────────────────────
+const CONFIG = {
+  webhookUrl: 'https://n8n.btb-ai.cloud/webhook/laurie-chatbot',
+  botName: 'Elena',
+  subtitle: 'Conference Assistant',
+  greeting: "Hi! I'm Elena, your conference assistant. What can I help you with?",
+};
+
+const QUICK_REPLIES = [
+  { label: 'Conference Dates',    query: 'What are the conference dates?' },
+  { label: 'Conference Location',  query: 'Where is the conference?' },
+  { label: 'Register Attendees',   query: 'How do I register attendees?' },
+  { label: 'Cancel / Substitute',  query: 'How do I cancel or substitute an attendee?' },
+  { label: 'Hotel Booking',        query: 'How do I book a hotel room?' },
+  { label: 'Ad Specs',             query: 'What are the program book ad specs?' },
+];
+
+// ──────────────────────────────────────────────
+
+const { useState, useRef, useEffect, useCallback } = React;
+
+function generateSessionId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+const SESSION_ID = generateSessionId();
+
+// -- Markdown-lite: convert **bold**, [text](url), and newlines --
+function renderMessageText(text) {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  const safeHref = (url) => url.replace(/"/g, '%22').replace(/'/g, '%27');
+
+  const html = escaped
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, text, url) =>
+      `<a href="${safeHref(url)}" target="_blank" rel="noopener noreferrer">${text}</a>`)
+    .replace(/(https?:\/\/[^\s<"]+)/g, (match, url, offset, str) => {
+      // Skip URLs already inside an anchor tag (href or anchor text)
+      const preceding = str.lastIndexOf('href="', offset);
+      if (preceding !== -1 && str.indexOf('"', preceding + 6) > offset) return match;
+      const lastClose = str.lastIndexOf('>', offset);
+      const lastOpen = str.lastIndexOf('<', offset);
+      if (lastClose > lastOpen) return match;
+      return `<a href="${safeHref(url)}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    })
+    .replace(/\n/g, '<br/>');
+
+  return html;
+}
+
+// ── Components ───────────────────────────────
+
+function ChatHeader() {
+  return (
+    <div style={{
+      background: 'var(--header-bg)',
+      padding: '20px 24px',
+      borderRadius: '16px 16px 0 0',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '14px',
+    }}>
+      <div style={{
+        width: 40, height: 40,
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <div style={{
+          fontFamily: 'var(--font-heading)',
+          fontWeight: 600,
+          fontSize: '16px',
+          color: '#fff',
+          lineHeight: 1.3,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          {CONFIG.botName}
+          <span style={{
+            fontSize: '10px',
+            fontWeight: 600,
+            background: 'rgba(20, 184, 166, 0.25)',
+            color: '#5eead4',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            letterSpacing: '0.5px',
+          }}>AI</span>
+        </div>
+        <div style={{
+          fontSize: '13px',
+          color: 'var(--muted-text)',
+          fontWeight: 400,
+          lineHeight: 1.3,
+          marginTop: '2px',
+        }}>
+          {CONFIG.subtitle}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BotMessage({ text }) {
+  return (
+    <div className="msg-animate" style={{
+      display: 'flex',
+      justifyContent: 'flex-start',
+      padding: '0 20px',
+      marginBottom: '12px',
+    }}>
+      <div className="bot-msg" style={{
+        background: 'var(--bot-bubble)',
+        borderRadius: '4px 12px 12px 12px',
+        padding: '12px 16px',
+        maxWidth: '85%',
+        fontSize: '14px',
+        lineHeight: 1.6,
+        color: 'var(--body-text)',
+      }} dangerouslySetInnerHTML={{ __html: renderMessageText(text) }} />
+    </div>
+  );
+}
+
+function UserMessage({ text }) {
+  return (
+    <div className="msg-animate" style={{
+      display: 'flex',
+      justifyContent: 'flex-end',
+      padding: '0 20px',
+      marginBottom: '12px',
+    }}>
+      <div style={{
+        background: 'var(--user-bubble)',
+        borderRadius: '12px 4px 12px 12px',
+        padding: '12px 16px',
+        maxWidth: '85%',
+        fontSize: '14px',
+        lineHeight: 1.6,
+        color: '#fff',
+      }}>
+        {text}
+      </div>
+    </div>
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <div className="msg-animate" style={{
+      display: 'flex',
+      justifyContent: 'flex-start',
+      padding: '0 20px',
+      marginBottom: '12px',
+    }}>
+      <div style={{
+        background: 'var(--bot-bubble)',
+        borderRadius: '4px 12px 12px 12px',
+        padding: '14px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2px',
+      }}>
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+      </div>
+    </div>
+  );
+}
+
+function QuickReplies({ onSelect }) {
+  return (
+    <div className="msg-animate" style={{
+      padding: '4px 20px 8px',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '8px',
+    }}>
+      {QUICK_REPLIES.map(item => (
+        <button
+          key={item.label}
+          className="chip"
+          onClick={() => onSelect(item.query)}
+          style={{
+            background: 'var(--chip-bg)',
+            border: '1px solid var(--chip-border)',
+            borderRadius: '999px',
+            padding: '7px 14px',
+            fontSize: '13px',
+            fontFamily: 'var(--font-body)',
+            fontWeight: 500,
+            color: 'var(--chip-text)',
+            lineHeight: 1.3,
+          }}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function InputArea({ onSend, disabled }) {
+  const [value, setValue] = useState('');
+  const inputRef = useRef(null);
+
+  const handleSend = useCallback(() => {
+    const trimmed = value.trim();
+    if (!trimmed || disabled) return;
+    onSend(trimmed);
+    setValue('');
+  }, [value, disabled, onSend]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }, [handleSend]);
+
+  useEffect(() => {
+    if (!disabled && inputRef.current) inputRef.current.focus();
+  }, [disabled]);
+
+  return (
+    <div style={{
+      padding: '16px 20px',
+      borderTop: '1px solid var(--input-border)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      background: '#fff',
+      borderRadius: '0 0 16px 16px',
+    }}>
+      <input
+        ref={inputRef}
+        type="text"
+        placeholder="Type your question..."
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        style={{
+          flex: 1,
+          border: '1px solid var(--input-border)',
+          borderRadius: '999px',
+          padding: '10px 16px',
+          fontSize: '14px',
+          fontFamily: 'var(--font-body)',
+          color: 'var(--body-text)',
+          outline: 'none',
+          background: 'var(--page-bg)',
+          transition: 'border-color 0.15s ease',
+        }}
+        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+        onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
+      />
+      <button
+        className="send-btn"
+        onClick={handleSend}
+        disabled={disabled || !value.trim()}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          background: 'var(--accent)',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          flexShrink: 0,
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+// ── Main Widget ──────────────────────────────
+
+function ChatWidget() {
+  const [messages, setMessages] = useState([
+    { role: 'bot', text: CONFIG.greeting },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading, scrollToBottom]);
+
+  const sendMessage = useCallback(async (text) => {
+    setMessages(prev => [...prev, { role: 'user', text }]);
+    setLoading(true);
+
+    try {
+      const res = await fetch(CONFIG.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatInput: text,
+          sessionId: SESSION_ID,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      const reply = data.output || data.text || data.response || data.message ||
+        (typeof data === 'string' ? data : 'No response received.');
+
+      setMessages(prev => [...prev, { role: 'bot', text: reply }]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        text: 'Something went wrong. Please try again.',
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return (
+    <div style={{
+      borderRadius: '16px',
+      boxShadow: 'var(--shadow)',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      height: 'min(640px, calc(100dvh - 32px))',
+      background: 'var(--page-bg)',
+    }}>
+      <ChatHeader />
+
+      <div className="messages-scroll" style={{
+        flex: 1,
+        overflowY: 'auto',
+        paddingTop: '20px',
+        paddingBottom: '8px',
+      }}>
+        {messages.map((msg, i) =>
+          msg.role === 'bot'
+            ? <BotMessage key={i} text={msg.text} />
+            : <UserMessage key={i} text={msg.text} />
+        )}
+
+        {messages.length === 1 && !loading && (
+          <QuickReplies onSelect={sendMessage} />
+        )}
+
+        {loading && <TypingIndicator />}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      <InputArea onSend={sendMessage} disabled={loading} />
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<ChatWidget />);
+</script>
+</body>
+</html>
