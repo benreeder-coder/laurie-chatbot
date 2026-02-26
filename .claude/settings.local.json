@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "Bash(curl:*)",
+      "Bash(vercel:*)",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "Bash(pip show:*)",
+      "Bash(python:*)",
+      "Bash(git status:*)",
+      "mcp__plugin_playwright_playwright__browser_run_code",
+      "Bash(kill 7946:*)",
+      "Bash(sed:*)",
+      "Bash(rm:*)",
+      "Bash(git check-ignore:*)"
+    ]
+  }
+}

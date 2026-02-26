@@ -1,6 +1,27 @@
-node_modules/
-.env
+# Debug/screenshot artifacts
+desktop-*.png
+mobile-*.png
+debug-*.png
+error*.png
+Screenshot*.png
 screenshot-*.png
+aspect.png
+.playwright-mcp/
+
+# Nano Banana source images (large PNGs)
+1772*.png
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+
+# Logs
 *.log
 
+# IDE
+.vscode/
+
+# Vercel
 .vercel
