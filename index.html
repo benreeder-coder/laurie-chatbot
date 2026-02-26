@@ -14,17 +14,17 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --page-bg: #fafaf9;
+    --page-bg: #faf0e6;
     --user-bubble: #0d9488;
-    --bot-bubble: #f5f5f4;
+    --bot-bubble: #f3e8db;
     --accent: #0d9488;
     --panel-bg: #1e3a7b;
-    --body-text: #334155;
-    --muted-text: #94a3b8;
-    --chip-border: #99f6e4;
-    --chip-text: #0f766e;
-    --chip-bg: #f0fdfa;
-    --input-border: #e2e8f0;
+    --body-text: #3d2c1e;
+    --muted-text: #8a7968;
+    --chip-border: #d4a574;
+    --chip-text: #6b4226;
+    --chip-bg: #fdf6ef;
+    --input-border: #ddd0c2;
     --shadow: 0 8px 32px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
     --font-heading: 'Outfit', sans-serif;
     --font-body: 'DM Sans', sans-serif;
@@ -32,7 +32,7 @@
 
   html, body {
     height: 100%;
-    background: #f5f0eb;
+    background: #f5ebe0;
     font-family: var(--font-body);
     color: var(--body-text);
     -webkit-font-smoothing: antialiased;
@@ -52,8 +52,8 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(ellipse at 20% 50%, rgba(13, 148, 136, 0.04), transparent 60%),
-      radial-gradient(ellipse at 80% 20%, rgba(30, 58, 123, 0.03), transparent 50%);
+      radial-gradient(ellipse at 20% 50%, rgba(180, 130, 70, 0.04), transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(120, 80, 40, 0.03), transparent 50%);
     pointer-events: none;
     z-index: 0;
   }
@@ -94,7 +94,7 @@
   /* Scrollbar */
   .messages-scroll::-webkit-scrollbar { width: 5px; }
   .messages-scroll::-webkit-scrollbar-track { background: transparent; }
-  .messages-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  .messages-scroll::-webkit-scrollbar-thumb { background: #c9b99a; border-radius: 3px; }
 
   /* Chip hover */
   .chip {
@@ -104,8 +104,8 @@
   }
   .chip:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.18);
-    background: #e6faf7;
+    box-shadow: 0 2px 8px rgba(180, 130, 70, 0.2);
+    background: #f0e0d0;
   }
   .chip:active {
     transform: translateY(0);
@@ -133,7 +133,7 @@
     text-underline-offset: 2px;
   }
   .bot-msg a:hover {
-    color: var(--chip-text);
+    color: #0d7377;
   }
 
   /* Responsive: hide person panel on mobile */
@@ -271,7 +271,6 @@ function BannerHeader() {
       alt="CCWC Conference Banner"
       style={{
         width: '100%',
-        maxHeight: 80,
         objectFit: 'cover',
         borderRadius: '16px 16px 0 0',
         display: 'block',
@@ -521,7 +520,7 @@ function InputArea({ onSend, disabled }) {
       display: 'flex',
       alignItems: 'center',
       gap: '10px',
-      background: '#fff',
+      background: '#fdf8f3',
       borderRadius: '0 0 0 16px',
     }}>
       <input
@@ -633,6 +632,7 @@ function ChatWidget() {
       flexDirection: 'column',
       height: 'min(700px, calc(100dvh - 32px))',
       background: 'var(--page-bg)',
+      border: '3px solid #c97b3a',
     }}>
       {/* Banner header - full width */}
       <BannerHeader />
