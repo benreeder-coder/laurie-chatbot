@@ -14,11 +14,11 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --header-bg: #0f172a;
     --page-bg: #fafaf9;
     --user-bubble: #0d9488;
     --bot-bubble: #f5f5f4;
     --accent: #0d9488;
+    --panel-bg: #1e3a7b;
     --body-text: #334155;
     --muted-text: #94a3b8;
     --chip-border: #99f6e4;
@@ -32,7 +32,7 @@
 
   html, body {
     height: 100%;
-    background: #f1f0ee;
+    background: #f5f0eb;
     font-family: var(--font-body);
     color: var(--body-text);
     -webkit-font-smoothing: antialiased;
@@ -53,7 +53,7 @@
     inset: 0;
     background:
       radial-gradient(ellipse at 20% 50%, rgba(13, 148, 136, 0.04), transparent 60%),
-      radial-gradient(ellipse at 80% 20%, rgba(15, 23, 42, 0.03), transparent 50%);
+      radial-gradient(ellipse at 80% 20%, rgba(30, 58, 123, 0.03), transparent 50%);
     pointer-events: none;
     z-index: 0;
   }
@@ -62,7 +62,7 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 440px;
+    max-width: 880px;
   }
 
   /* Message entry animation */
@@ -135,6 +135,22 @@
   .bot-msg a:hover {
     color: var(--chip-text);
   }
+
+  /* Responsive: hide person panel on mobile */
+  @media (max-width: 768px) {
+    #root {
+      max-width: 440px;
+    }
+    .person-panel {
+      display: none !important;
+    }
+    .chat-column {
+      border-radius: 0 0 0 16px !important;
+    }
+    .input-area {
+      border-radius: 0 0 16px 16px !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -149,6 +165,10 @@ const CONFIG = {
   botName: 'Elena',
   subtitle: 'Conference Assistant',
   greeting: "Hi! I'm Elena, your conference assistant. What can I help you with?",
+  bannerImage: 'laurie.jpg',
+  // To use a real photo for Elena, set this to the image path (e.g. 'elena-avatar.png')
+  // and the SVG placeholder will be replaced automatically.
+  elenaAvatar: null,
 };
 
 const QUICK_REPLIES = [
@@ -158,6 +178,8 @@ const QUICK_REPLIES = [
   { label: 'Cancel / Substitute',  query: 'How do I cancel or substitute an attendee?' },
   { label: 'Hotel Booking',        query: 'How do I book a hotel room?' },
   { label: 'Ad Specs',             query: 'What are the program book ad specs?' },
+  { label: 'Conference Swag',      query: 'How do I send conference swag for tote bags?' },
+  { label: 'Attire',               query: 'What is the dress code?' },
 ];
 
 // ──────────────────────────────────────────────
@@ -200,62 +222,164 @@ function renderMessageText(text) {
   return html;
 }
 
+// ── Avatar Components ────────────────────────
+
+// Elena avatar: uses real image if CONFIG.elenaAvatar is set, otherwise SVG placeholder
+function ElenaAvatar({ size }) {
+  if (CONFIG.elenaAvatar) {
+    return (
+      <img
+        src={CONFIG.elenaAvatar}
+        alt="Elena"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          objectPosition: 'top',
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+      <circle cx="20" cy="20" r="20" fill="#0d9488" />
+      <circle cx="20" cy="15" r="7" fill="white" />
+      <ellipse cx="20" cy="33" rx="12" ry="10" fill="white" />
+    </svg>
+  );
+}
+
+// Generic user silhouette avatar
+function UserAvatar({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+      <circle cx="20" cy="20" r="20" fill="#94a3b8" />
+      <circle cx="20" cy="15" r="7" fill="white" />
+      <ellipse cx="20" cy="33" rx="12" ry="10" fill="white" />
+    </svg>
+  );
+}
+
 // ── Components ───────────────────────────────
 
-function ChatHeader() {
+function BannerHeader() {
   return (
-    <div style={{
-      background: 'var(--header-bg)',
-      padding: '20px 24px',
-      borderRadius: '16px 16px 0 0',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '14px',
-    }}>
-      <div style={{
-        width: 40, height: 40,
-        borderRadius: '50%',
-        background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
+    <img
+      src={CONFIG.bannerImage}
+      alt="CCWC Conference Banner"
+      style={{
+        width: '100%',
+        maxHeight: 80,
+        objectFit: 'cover',
+        borderRadius: '16px 16px 0 0',
+        display: 'block',
+      }}
+    />
+  );
+}
+
+function PersonPanel() {
+  return (
+    <div
+      className="person-panel"
+      style={{
+        width: '42%',
+        background: 'var(--panel-bg)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        borderRadius: '0 0 16px 0',
+        position: 'relative',
+        overflow: 'hidden',
         flexShrink: 0,
+      }}
+    >
+      {/* Name and title area */}
+      <div style={{
+        paddingTop: 32,
+        paddingBottom: 24,
+        textAlign: 'center',
+        zIndex: 1,
       }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      </div>
-      <div>
         <div style={{
           fontFamily: 'var(--font-heading)',
           fontWeight: 600,
-          fontSize: '16px',
+          fontSize: '20px',
           color: '#fff',
           lineHeight: 1.3,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: '8px',
         }}>
           {CONFIG.botName}
           <span style={{
-            fontSize: '10px',
+            fontSize: '11px',
             fontWeight: 600,
-            background: 'rgba(20, 184, 166, 0.25)',
+            background: 'rgba(20, 184, 166, 0.35)',
             color: '#5eead4',
-            padding: '2px 6px',
+            padding: '2px 8px',
             borderRadius: '4px',
             letterSpacing: '0.5px',
           }}>AI</span>
         </div>
         <div style={{
-          fontSize: '13px',
-          color: 'var(--muted-text)',
+          fontSize: '14px',
+          color: 'rgba(255, 255, 255, 0.7)',
           fontWeight: 400,
           lineHeight: 1.3,
-          marginTop: '2px',
+          marginTop: '4px',
         }}>
           {CONFIG.subtitle}
         </div>
+      </div>
+
+      {/* Elena character image area */}
+      <div style={{
+        flex: 1,
+        width: '100%',
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+        {/* Gradient fade at top */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 40,
+          background: 'linear-gradient(to bottom, var(--panel-bg), transparent)',
+          zIndex: 1,
+        }} />
+        {CONFIG.elenaAvatar ? (
+          <img
+            src={CONFIG.elenaAvatar}
+            alt="Elena - Conference Assistant"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'top',
+            }}
+          />
+        ) : (
+          // SVG placeholder for the panel -- professional silhouette
+          <svg viewBox="0 0 200 300" style={{ width: '70%', maxHeight: '100%', marginBottom: 0 }}>
+            {/* Head */}
+            <circle cx="100" cy="80" r="40" fill="rgba(255,255,255,0.15)" />
+            {/* Body */}
+            <path d="M 40 300 L 40 180 Q 40 140 70 130 L 100 120 L 130 130 Q 160 140 160 180 L 160 300 Z" fill="rgba(255,255,255,0.1)" />
+            {/* Blazer lapels */}
+            <path d="M 70 130 L 100 170 L 90 300 L 40 300 L 40 180 Q 40 140 70 130 Z" fill="rgba(255,255,255,0.08)" />
+            <path d="M 130 130 L 100 170 L 110 300 L 160 300 L 160 180 Q 160 140 130 130 Z" fill="rgba(255,255,255,0.08)" />
+            {/* Collar */}
+            <path d="M 85 125 L 100 155 L 115 125" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" />
+          </svg>
+        )}
       </div>
     </div>
   );
@@ -265,15 +389,17 @@ function BotMessage({ text }) {
   return (
     <div className="msg-animate" style={{
       display: 'flex',
-      justifyContent: 'flex-start',
-      padding: '0 20px',
+      alignItems: 'flex-start',
+      padding: '0 16px',
       marginBottom: '12px',
+      gap: '8px',
     }}>
+      <ElenaAvatar size={28} />
       <div className="bot-msg" style={{
         background: 'var(--bot-bubble)',
         borderRadius: '4px 12px 12px 12px',
         padding: '12px 16px',
-        maxWidth: '85%',
+        maxWidth: 'calc(100% - 36px)',
         fontSize: '14px',
         lineHeight: 1.6,
         color: 'var(--body-text)',
@@ -286,21 +412,24 @@ function UserMessage({ text }) {
   return (
     <div className="msg-animate" style={{
       display: 'flex',
+      alignItems: 'flex-start',
       justifyContent: 'flex-end',
-      padding: '0 20px',
+      padding: '0 16px',
       marginBottom: '12px',
+      gap: '8px',
     }}>
       <div style={{
         background: 'var(--user-bubble)',
         borderRadius: '12px 4px 12px 12px',
         padding: '12px 16px',
-        maxWidth: '85%',
+        maxWidth: 'calc(100% - 36px)',
         fontSize: '14px',
         lineHeight: 1.6,
         color: '#fff',
       }}>
         {text}
       </div>
+      <UserAvatar size={28} />
     </div>
   );
 }
@@ -309,10 +438,12 @@ function TypingIndicator() {
   return (
     <div className="msg-animate" style={{
       display: 'flex',
-      justifyContent: 'flex-start',
-      padding: '0 20px',
+      alignItems: 'flex-start',
+      padding: '0 16px',
       marginBottom: '12px',
+      gap: '8px',
     }}>
+      <ElenaAvatar size={28} />
       <div style={{
         background: 'var(--bot-bubble)',
         borderRadius: '4px 12px 12px 12px',
@@ -332,7 +463,7 @@ function TypingIndicator() {
 function QuickReplies({ onSelect }) {
   return (
     <div className="msg-animate" style={{
-      padding: '4px 20px 8px',
+      padding: '4px 16px 8px 52px',
       display: 'flex',
       flexWrap: 'wrap',
       gap: '8px',
@@ -384,14 +515,14 @@ function InputArea({ onSend, disabled }) {
   }, [disabled]);
 
   return (
-    <div style={{
+    <div className="input-area" style={{
       padding: '16px 20px',
       borderTop: '1px solid var(--input-border)',
       display: 'flex',
       alignItems: 'center',
       gap: '10px',
       background: '#fff',
-      borderRadius: '0 0 16px 16px',
+      borderRadius: '0 0 0 16px',
     }}>
       <input
         ref={inputRef}
@@ -500,33 +631,54 @@ function ChatWidget() {
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      height: 'min(640px, calc(100dvh - 32px))',
+      height: 'min(700px, calc(100dvh - 32px))',
       background: 'var(--page-bg)',
     }}>
-      <ChatHeader />
+      {/* Banner header - full width */}
+      <BannerHeader />
 
-      <div className="messages-scroll" style={{
+      {/* Two-column body */}
+      <div style={{
         flex: 1,
-        overflowY: 'auto',
-        paddingTop: '20px',
-        paddingBottom: '8px',
+        display: 'flex',
+        flexDirection: 'row',
+        overflow: 'hidden',
       }}>
-        {messages.map((msg, i) =>
-          msg.role === 'bot'
-            ? <BotMessage key={i} text={msg.text} />
-            : <UserMessage key={i} text={msg.text} />
-        )}
+        {/* Left column: chat + input */}
+        <div className="chat-column" style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          borderRadius: '0 0 0 16px',
+        }}>
+          <div className="messages-scroll" style={{
+            flex: 1,
+            overflowY: 'auto',
+            paddingTop: '20px',
+            paddingBottom: '8px',
+          }}>
+            {messages.map((msg, i) =>
+              msg.role === 'bot'
+                ? <BotMessage key={i} text={msg.text} />
+                : <UserMessage key={i} text={msg.text} />
+            )}
 
-        {messages.length === 1 && !loading && (
-          <QuickReplies onSelect={sendMessage} />
-        )}
+            {messages.length === 1 && !loading && (
+              <QuickReplies onSelect={sendMessage} />
+            )}
 
-        {loading && <TypingIndicator />}
+            {loading && <TypingIndicator />}
 
-        <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
+          </div>
+
+          <InputArea onSend={sendMessage} disabled={loading} />
+        </div>
+
+        {/* Right column: person panel */}
+        <PersonPanel />
       </div>
-
-      <InputArea onSend={sendMessage} disabled={loading} />
     </div>
   );
 }
