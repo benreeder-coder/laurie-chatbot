@@ -167,8 +167,6 @@ const CONFIG = {
   subtitle: 'Conference Assistant',
   greeting: "Hi! I'm Elena, your conference assistant. What can I help you with?",
   bannerImage: 'orlando-banner.jpg',
-  // To use a real photo for Elena, set this to the image path (e.g. 'elena-avatar.png')
-  // and the SVG placeholder will be replaced automatically.
   elenaAvatar: 'elena-avatar.jpg',
 };
 
@@ -672,7 +670,7 @@ function ChatWidget() {
                 : <UserMessage key={i} text={msg.text} />
             )}
 
-            {messages.length === 1 && !loading && (
+            {!loading && (
               <QuickReplies onSelect={sendMessage} />
             )}
 
